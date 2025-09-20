@@ -12,34 +12,63 @@ except:
     print respectful error message
 """
 
+import requests
 import os
-import requests 
 from urllib.parse import urlparse
-def fetch_image():
-    url = input("Enter the image URL: ")
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # Check if the request was successful
 
-        # Create directory if it doesn't exist
-        os.makedirs("Fetched_Images", exist_ok=True)
+def main():
+    print("Welcome to the Ubuntu Image Fetcher")
+    print("A tool for mindfully collecting images from the web\n")
 
-        # Extract filename from URL
-        parsed_url = urlparse(url)
-        filename = os.path.basename(parsed_url.path)
-        if not filename:  # If URL does not end with a filename, create one
-            filename = "downloaded_image.jpg"
+    # Get multiple URLs
+    urls = input("Enter image URLs separated by commas: ").split(",")
 
-        filepath = os.path.join("Fetched_Images", filename)
+    # Create directory if it doesn't exist
+    os.makedirs("Fetched_Images", exist_ok=True)
 
-        # Save the image
-        with open(filepath, 'wb') as file:
-            file.write(response.content)
+    for url in urls:
+        url = url.strip()
+        if not url:
+            continue  # skip empty entries
 
-        print(f"Image successfully fetched and saved to {filepath}")
+        try:
+            headers = {"User-Agent": "UbuntuFetcher/1.0 (Respectful Image Fetcher)"}
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()  # Raise exception for bad status codes
 
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching the image: {e}")
-        
+            # Check content type
+            content_type = response.headers.get("Content-Type", "")
+            if not content_type.startswith("image/"):
+                print(f"✗ Skipping {url} — not an image (Content-Type: {content_type})")
+                continue
+
+            # Extract filename
+            parsed_url = urlparse(url)
+            filename = os.path.basename(parsed_url.path)
+            if not filename:
+                filename = "downloaded_image.jpg"
+
+            filepath = os.path.join("Fetched_Images", filename)
+
+            # Prevent duplicates
+            if os.path.exists(filepath):
+                print(f"⚠️ Skipping {filename} — already exists.")
+                continue
+
+            # Save the image
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+
+            print(f"✓ Successfully fetched: {filename}")
+            print(f"✓ Image saved to {filepath}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"✗ Connection error for {url}: {e}")
+        except Exception as e:
+            print(f"✗ An error occurred for {url}: {e}")
+
+    print("\nConnection strengthened. Community enriched.")
+    print("Remember: 'I am because we are.'")
+
 if __name__ == "__main__":
-    fetch_image()# Each object responds differently
+    main()
